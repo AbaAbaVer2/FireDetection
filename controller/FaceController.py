@@ -361,7 +361,7 @@ def face_insert(id, name, age, phone):
             host="localhost",
             port=3306,
             user="root",
-            password="Disaster04",  # 使用更新后的密码
+            password="your_sql_password",  # 使用更新后的密码
             database="detection",
             charset="utf8mb3"
         )
