@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>人脸采集</title>
+    <script src="/static/js/jquery.js"></script>
+    <script src="/static/js/faceUtil.js"></script>
+    <script src="/static/js/vue.min.js"></script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #video {
+            margin: 20px auto;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #status {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-left: 4px solid #4CAF50;
+            display: none;
+        }
+        .error {
+            border-left-color: #f44336 !important;
+        }
+        .links {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .links a {
+            margin: 0 10px;
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>人脸信息采集</h1>
+        
+        <div id="myapp">
+            <div id="video"></div>
+            
+            <div class="form-group">
+                <label for="name">姓名:</label>
+                <input type="text" id="name" v-model="name" placeholder="请输入姓名">
+            </div>
+            
+            <div class="form-group">
+                <label for="age">年龄:</label>
+                <input type="number" id="age" v-model="age" placeholder="请输入年龄">
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">手机:</label>
+                <input type="text" id="phone" v-model="phone" placeholder="请输入手机号码">
+            </div>
+            
+            <button type="button" @click="facecollect">采集人脸信息</button>
+            
+            <div id="status"></div>
+            
+            <div class="links">
+                <a href="/static/face_detect.html">前往人脸识别验证页面</a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 检查浏览器是否支持getUserMedia
+        function checkMediaSupport() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showStatus("您的浏览器不支持摄像头访问，请使用Chrome、Firefox或Edge浏览器", true);
+                return false;
+            }
+            return true;
+        }
+        
+        // 显示状态信息
+        function showStatus(message, isError) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            if (isError) {
+                statusDiv.classList.add('error');
+            } else {
+                statusDiv.classList.remove('error');
+            }
+        }
+        
+        // 页面加载完成后执行
+        $(document).ready(function() {
+            console.log("页面已加载");
+            
+            // 检查浏览器支持
+            if (checkMediaSupport()) {
+                try {
+                    console.log("初始化摄像头");
+                    faceUtile.openVideo("video");
+                    faceUtile.width = 400;
+                    faceUtile.height = 300;
+                } catch (e) {
+                    console.error("摄像头初始化失败:", e);
+                    showStatus("摄像头初始化失败: " + e.message, true);
+                }
+            }
+        });
+        
+        new Vue({
+            el: "#myapp",
+            data: {
+                name: '',
+                age: '',
+                phone: ''
+            },
+            methods: {
+                facecollect() {
+                    // 表单验证
+                    if (!this.name) {
+                        showStatus("请输入姓名", true);
+                        return;
+                    }
+                    
+                    if (!this.age) {
+                        showStatus("请输入年龄", true);
+                        return;
+                    }
+                    
+                    if (!this.phone) {
+                        showStatus("请输入手机号码", true);
+                        return;
+                    }
+                    
+                    try {
+                        console.log("开始获取人脸编码");
+                        showStatus("正在处理...", false);
+                        
+                        const code = faceUtile.getDecode(); // 获取人脸信息码
+                        if (!code) {
+                            showStatus("无法获取摄像头图像", true);
+                            return;
+                        }
+                        
+                        console.log("获取到人脸编码，发送到后端");
+                        
+                        const param = {
+                            image: code,
+                            name: this.name,
+                            age: this.age,
+                            phone: this.phone
+                        };
+                        
+                        // 发送ajax请求，把前端获取的数据发送给后端
+                        $.ajax({
+                            url: "/face_collect/",
+                            type: "post",
+                            data: JSON.stringify(param),
+                            contentType: "application/json",
+                            success: function(res) {
+                                console.log("接收到后端响应:", res);
+                                if (res.code == 200) {
+                                    showStatus("成功: " + res.msg, false);
+                                    setTimeout(function() {
+                                        if (confirm("信息采集成功！是否前往人脸识别验证页面？")) {
+                                            window.location.href = "/static/face_detect.html";
+                                        }
+                                    }, 1000);
+                                } else {
+                                    showStatus("失败: " + res.msg, true);
+                                }
+                            },
+                            error: function(err) {
+                                console.error("请求失败:", err);
+                                showStatus("请求失败: " + (err.responseJSON ? err.responseJSON.msg : err.statusText), true);
+                            }
+                        });
+                    } catch (e) {
+                        console.error("处理出错:", e);
+                        showStatus("处理出错: " + e.message, true);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

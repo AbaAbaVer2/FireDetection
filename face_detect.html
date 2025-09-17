@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script  src="/static/js/jquery.js"></script>
+    <script src="/static/js/faceUtil.js"></script>
+    <script src="/static/js/vue.min.js"></script>
+</head>
+<body>
+
+    <div id="myapp">
+
+         <div id="video" v-model="name">
+                 <button type="btn" @click="facecollect" >人脸信息验证</button>
+              </br>
+     </div>
+    </div>
+</body>
+<script>
+    new Vue({
+        el:"#myApp",
+        methods:{
+            facecollect(){
+                const code=faceUtile.getDecode();//获取人脸信息码
+                comsole.log( code);//控制台打印人脸信息码
+                const param={
+                    image:code
+                }
+                //发送ajax请求，把前端获取的数据发送给后端
+                $.ajax({
+                    url:"/face_detect/",
+                    type:"post",
+                    data:JSON.stringify(param),
+
+                    success:function (res) {
+                   if(res.code==200){
+                       alert(res.msg);
+                   }else{
+                       alert(res.msg)
+                   }
+                    }
+                })
+            }
+            }
+    })
+    $(function () {
+        faceUtile.openVideo("video")
+        faceUtile.width=400;
+        faceUtile.height=300;
+    })
+</script>
+</html>

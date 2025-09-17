@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人脸识别系统 - 登录</title>
+    <script src="/static/js/jquery.js"></script>
+    <script src="/static/js/vue.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #fff;
+            height: 600px;
+        }
+        
+        .sidebar {
+            background: linear-gradient(to bottom, #4CAF50, #388E3C);
+            width: 40%;
+            padding: 40px;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .sidebar h1 {
+            font-size: 28px;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        
+        .sidebar .features {
+            margin-top: 30px;
+        }
+        
+        .sidebar .feature {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .sidebar .feature-icon {
+            width: 24px;
+            height: 24px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+        }
+        
+        .form-container {
+            width: 60%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .form-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #e1e1e1;
+        }
+        
+        .form-tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #777;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .form-tab.active {
+            color: #4CAF50;
+        }
+        
+        .form-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #4CAF50;
+        }
+        
+        .form {
+            display: none;
+        }
+        
+        .form.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s;
+            margin-top: 15px;
+        }
+        
+        .btn:hover {
+            background-color: #45a049;
+        }
+        
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .error-message {
+            color: #f44336;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .success-message {
+            color: #4CAF50;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        /* 登录成功后的选择界面 */
+        #feature-selection {
+            display: none;
+            text-align: center;
+        }
+        
+        .feature-title {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .feature-cards {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .feature-card {
+            flex: 1;
+            margin: 0 15px;
+            padding: 25px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: #333;
+            display: block;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            background-color: #f0f7f0;
+        }
+        
+        .feature-card h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #4CAF50;
+        }
+        
+        .feature-card p {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .feature-icon-large {
+            font-size: 40px;
+            margin-bottom: 15px;
+            color: #4CAF50;
+        }
+        
+        .logout-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+            color: #777;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .logout-link:hover {
+            color: #4CAF50;
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+            }
+            .sidebar, .form-container {
+                width: 100%;
+            }
+            .feature-cards {
+                flex-direction: column;
+            }
+            .feature-card {
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <div class="sidebar">
+            <h1>人脸识别系统</h1>
+            <p>欢迎使用我们的人脸识别系统，该系统提供高精度的人脸采集和验证功能。</p>
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">✓</div>
+                    <span>高精度人脸采集</span>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">✓</div>
+                    <span>快速人脸识别验证</span>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">✓</div>
+                    <span>安全可靠的数据存储</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-container">
+            <!-- 表单切换选项卡 -->
+            <div class="form-tabs">
+                <div class="form-tab" :class="{ active: activeForm === 'login' }" @click="setActiveForm('login')">登录</div>
+                <div class="form-tab" :class="{ active: activeForm === 'register' }" @click="setActiveForm('register')">注册</div>
+            </div>
+            
+            <!-- 登录表单 -->
+            <div class="form" :class="{ active: activeForm === 'login' }">
+                <div class="form-group">
+                    <label for="login-username">用户名</label>
+                    <input type="text" id="login-username" class="form-control" v-model="loginForm.username" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">密码</label>
+                    <input type="password" id="login-password" class="form-control" v-model="loginForm.password" placeholder="请输入密码">
+                </div>
+                <button class="btn" @click="login" :disabled="isLoggingIn">{{ isLoggingIn ? '登录中...' : '登录' }}</button>
+                <div class="error-message" id="login-error"></div>
+            </div>
+            
+            <!-- 注册表单 -->
+            <div class="form" :class="{ active: activeForm === 'register' }">
+                <div class="form-group">
+                    <label for="register-username">用户名</label>
+                    <input type="text" id="register-username" class="form-control" v-model="registerForm.username" placeholder="请设置用户名">
+                </div>
+                <div class="form-group">
+                    <label for="register-password">密码</label>
+                    <input type="password" id="register-password" class="form-control" v-model="registerForm.password" placeholder="请设置密码">
+                </div>
+                <div class="form-group">
+                    <label for="register-confirm">确认密码</label>
+                    <input type="password" id="register-confirm" class="form-control" v-model="registerForm.confirmPassword" placeholder="请再次输入密码">
+                </div>
+                <button class="btn" @click="register" :disabled="isRegistering">{{ isRegistering ? '注册中...' : '注册' }}</button>
+                <div class="error-message" id="register-error"></div>
+                <div class="success-message" id="register-success"></div>
+            </div>
+            
+            <!-- 登录成功后的功能选择 -->
+            <div id="feature-selection">
+                <h2 class="feature-title">欢迎回来，<span id="welcome-username"></span></h2>
+                <p>请选择您要使用的功能</p>
+                
+                <div class="feature-cards">
+                    <a href="/static/face_collect.html" class="feature-card">
+                        <div class="feature-icon-large">📷</div>
+                        <h3>人脸采集</h3>
+                        <p>采集和存储人脸信息，用于后续的人脸识别验证。</p>
+                    </a>
+                    
+                    <a href="/static/face_detect.html" class="feature-card">
+                        <div class="feature-icon-large">🔍</div>
+                        <h3>人脸验证</h3>
+                        <p>将采集的人脸与已存储的人脸进行比对验证。</p>
+                    </a>
+                </div>
+                
+                <a href="#" class="logout-link" @click="logout">退出登录</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                activeForm: 'login',
+                isLoggingIn: false,
+                isRegistering: false,
+                loginForm: {
+                    username: '',
+                    password: ''
+                },
+                registerForm: {
+                    username: '',
+                    password: '',
+                    confirmPassword: ''
+                },
+                // 简单用户数据存储（实际应该使用数据库）
+                users: []
+            },
+            mounted() {
+                // 尝试从 localStorage 加载用户数据
+                const savedUsers = localStorage.getItem('face_recognition_users');
+                if (savedUsers) {
+                    this.users = JSON.parse(savedUsers);
+                }
+                
+                // 检查是否已登录
+                const currentUser = this.getCurrentUser();
+                if (currentUser) {
+                    this.showFeatureSelection(currentUser.username);
+                }
+            },
+            methods: {
+                // 切换表单
+                setActiveForm(form) {
+                    this.activeForm = form;
+                    document.getElementById('login-error').style.display = 'none';
+                    document.getElementById('register-error').style.display = 'none';
+                    document.getElementById('register-success').style.display = 'none';
+                },
+                
+                // 登录处理
+                login() {
+                    const errorElement = document.getElementById('login-error');
+                    errorElement.style.display = 'none';
+                    
+                    // 表单验证
+                    if (!this.loginForm.username || !this.loginForm.password) {
+                        errorElement.textContent = '请填写用户名和密码';
+                        errorElement.style.display = 'block';
+                        return;
+                    }
+                    
+                    this.isLoggingIn = true;
+                    
+                    // 模拟登录请求
+                    setTimeout(() => {
+                        const user = this.users.find(u => 
+                            u.username === this.loginForm.username && 
+                            u.password === this.loginForm.password
+                        );
+                        
+                        if (user) {
+                            // 登录成功
+                            localStorage.setItem('face_recognition_current_user', JSON.stringify({
+                                username: user.username,
+                                loginTime: new Date().getTime()
+                            }));
+                            
+                            this.showFeatureSelection(user.username);
+                        } else {
+                            // 登录失败
+                            errorElement.textContent = '用户名或密码错误';
+                            errorElement.style.display = 'block';
+                        }
+                        
+                        this.isLoggingIn = false;
+                    }, 800);
+                },
+                
+                // 注册处理
+                register() {
+                    const errorElement = document.getElementById('register-error');
+                    const successElement = document.getElementById('register-success');
+                    
+                    errorElement.style.display = 'none';
+                    successElement.style.display = 'none';
+                    
+                    // 表单验证
+                    if (!this.registerForm.username || !this.registerForm.password || !this.registerForm.confirmPassword) {
+                        errorElement.textContent = '请填写所有必填字段';
+                        errorElement.style.display = 'block';
+                        return;
+                    }
+                    
+                    if (this.registerForm.password !== this.registerForm.confirmPassword) {
+                        errorElement.textContent = '两次输入的密码不一致';
+                        errorElement.style.display = 'block';
+                        return;
+                    }
+                    
+                    // 检查用户名是否已存在
+                    if (this.users.some(u => u.username === this.registerForm.username)) {
+                        errorElement.textContent = '该用户名已被注册';
+                        errorElement.style.display = 'block';
+                        return;
+                    }
+                    
+                    this.isRegistering = true;
+                    
+                    // 模拟注册请求
+                    setTimeout(() => {
+                        // 添加新用户
+                        this.users.push({
+                            username: this.registerForm.username,
+                            password: this.registerForm.password
+                        });
+                        
+                        // 保存用户数据到 localStorage
+                        localStorage.setItem('face_recognition_users', JSON.stringify(this.users));
+                        
+                        // 注册成功
+                        successElement.textContent = '注册成功，请前往登录';
+                        successElement.style.display = 'block';
+                        
+                        // 清空表单
+                        this.registerForm.username = '';
+                        this.registerForm.password = '';
+                        this.registerForm.confirmPassword = '';
+                        
+                        this.isRegistering = false;
+                    }, 800);
+                },
+                
+                // 显示功能选择界面
+                showFeatureSelection(username) {
+                    document.querySelector('.form-tabs').style.display = 'none';
+                    document.querySelector('.form.active').style.display = 'none';
+                    document.getElementById('feature-selection').style.display = 'block';
+                    document.getElementById('welcome-username').textContent = username;
+                },
+                
+                // 退出登录
+                logout(event) {
+                    if (event) event.preventDefault();
+                    localStorage.removeItem('face_recognition_current_user');
+                    window.location.reload();
+                },
+                
+                // 获取当前登录用户
+                getCurrentUser() {
+                    const userJson = localStorage.getItem('face_recognition_current_user');
+                    if (userJson) {
+                        const user = JSON.parse(userJson);
+                        // 检查登录状态是否过期（这里设置24小时过期）
+                        if (new Date().getTime() - user.loginTime < 24 * 60 * 60 * 1000) {
+                            return user;
+                        } else {
+                            localStorage.removeItem('face_recognition_current_user');
+                        }
+                    }
+                    return null;
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

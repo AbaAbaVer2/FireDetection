@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>人脸识别验证</title>
+    <script src="/static/js/jquery.js"></script>
+    <script src="/static/js/faceUtil.js"></script>
+    <script src="/static/js/vue.min.js"></script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        #video {
+            margin: 20px auto;
+            text-align: center;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+            display: block;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #dff0d8;
+            border-left: 5px solid #3c763d;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            border-left: 5px solid #a94442;
+            color: #a94442;
+        }
+        .warning {
+            background-color: #fcf8e3;
+            border-left: 5px solid #8a6d3b;
+            color: #8a6d3b;
+        }
+        .links {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .links a {
+            color: #4CAF50;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+        
+        /* 结果显示样式 */
+        #result-container {
+            margin-top: 20px;
+            display: none;
+        }
+        .result-box {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .match-details {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .detail-item {
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .similarity-high {
+            color: #3c763d;
+            font-weight: bold;
+        }
+        .similarity-medium {
+            color: #8a6d3b;
+            font-weight: bold;
+        }
+        .similarity-low {
+            color: #a94442;
+            font-weight: bold;
+        }
+
+        /* 烟火识别按钮样式 */
+        .fire-detection-btn {
+            background-color: #ff5722;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            width: 100%;
+            transition: background-color 0.3s;
+            display: none; /* 默认隐藏 */
+        }
+
+        .fire-detection-btn:hover {
+            background-color: #e64a19;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>人脸识别验证</h1>
+        
+        <div id="myapp">
+            <div id="video"></div>
+            <div id="status"></div>
+            <button type="button" @click="facecollect">开始人脸验证</button>
+            
+            <!-- 结果显示区域 -->
+            <div id="result-container">
+                <div class="result-box">
+                    <h3 id="result-title">识别结果</h3>
+                    <div id="result-message"></div>
+                    
+                    <div id="match-details" class="match-details">
+                        <div class="detail-item">
+                            <span class="detail-label">ID:</span>
+                            <span id="match-id"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">姓名:</span>
+                            <span id="match-name"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">年龄:</span>
+                            <span id="match-age"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">联系方式:</span>
+                            <span id="match-phone"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">相似度:</span>
+                            <span id="match-similarity"></span>
+                        </div>
+                        <!-- 添加烟火识别按钮 -->
+                        <button id="fire-detection-btn" class="fire-detection-btn" onclick="window.location.href='/static/detection_detect.html'">烟火识别</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="links">
+                <a href="/static/face_collect.html">前往人脸信息采集页面</a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 检查浏览器是否支持getUserMedia
+        function checkMediaSupport() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showStatus("您的浏览器不支持摄像头访问，请使用Chrome、Firefox或Edge浏览器", "error");
+                return false;
+            }
+            return true;
+        }
+        
+        // 显示状态信息
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            // 移除所有样式类
+            statusDiv.classList.remove('success', 'error', 'warning');
+            
+            // 添加对应类型的样式
+            if (type) {
+                statusDiv.classList.add(type);
+            }
+        }
+        
+        // 显示匹配结果
+        function showResult(data) {
+            const resultContainer = document.getElementById('result-container');
+            resultContainer.style.display = 'block';
+            
+            // 隐藏烟火识别按钮（默认）
+            document.getElementById('fire-detection-btn').style.display = 'none';
+            
+            if (data.code === 200) {
+                // 成功匹配
+                document.getElementById('result-title').textContent = '识别成功';
+                document.getElementById('result-message').textContent = data.msg;
+                
+                // 显示烟火识别按钮（仅当人脸识别成功时）
+                document.getElementById('fire-detection-btn').style.display = 'block';
+                
+                // 显示详细信息
+                if (data.match_details) {
+                    const details = data.match_details;
+                    document.getElementById('match-id').textContent = details.id;
+                    document.getElementById('match-name').textContent = details.name || '未知';
+                    document.getElementById('match-age').textContent = details.age || '未知';
+                    document.getElementById('match-phone').textContent = details.phone || '未知';
+                    
+                    const similarity = document.getElementById('match-similarity');
+                    similarity.textContent = details.similarity;
+                    
+                    // 根据相似度设置不同样式
+                    similarity.className = '';
+                    const simValue = parseFloat(details.similarity);
+                    if (simValue >= 80) {
+                        similarity.classList.add('similarity-high');
+                    } else if (simValue >= 60) {
+                        similarity.classList.add('similarity-medium');
+                    } else {
+                        similarity.classList.add('similarity-low');
+                    }
+                    
+                    document.getElementById('match-details').style.display = 'block';
+                }
+            } else {
+                // 匹配失败
+                document.getElementById('result-title').textContent = '识别失败';
+                document.getElementById('result-message').textContent = data.msg;
+                
+                // 显示最佳匹配信息
+                if (data.best_match) {
+                    const bestMatch = data.best_match;
+                    document.getElementById('match-id').textContent = bestMatch.id;
+                    document.getElementById('match-name').textContent = '未知';
+                    document.getElementById('match-age').textContent = '未知';
+                    document.getElementById('match-phone').textContent = '未知';
+                    document.getElementById('match-similarity').textContent = bestMatch.similarity + ' (不足以确认)';
+                    document.getElementById('match-similarity').className = 'similarity-low';
+                    document.getElementById('match-details').style.display = 'block';
+                } else {
+                    document.getElementById('match-details').style.display = 'none';
+                }
+            }
+        }
+        
+        // 页面加载完成后执行
+        $(document).ready(function() {
+            console.log("页面已加载");
+            
+            // 检查浏览器支持
+            if (checkMediaSupport()) {
+                try {
+                    console.log("初始化摄像头");
+                    faceUtile.openVideo("video");
+                    faceUtile.width = 400;
+                    faceUtile.height = 300;
+                } catch (e) {
+                    console.error("摄像头初始化失败:", e);
+                    showStatus("摄像头初始化失败: " + e.message, "error");
+                }
+            }
+        });
+        
+        new Vue({
+            el: "#myapp",
+            methods: {
+                facecollect() {
+                    try {
+                        console.log("开始获取人脸编码");
+                        showStatus("正在处理...", "warning");
+                        
+                        const code = faceUtile.getDecode(); // 获取人脸信息码
+                        if (!code) {
+                            showStatus("无法获取摄像头图像", "error");
+                            return;
+                        }
+                        
+                        console.log("获取到人脸编码，发送到后端");
+                        
+                        const param = {
+                            image: code
+                        }
+                        
+                        // 隐藏结果区域
+                        document.getElementById('result-container').style.display = 'none';
+                        
+                        // 发送ajax请求，把前端获取的数据发送给后端
+                        $.ajax({
+                            url: "/face_detect/",
+                            type: "post",
+                            data: JSON.stringify(param),
+                            contentType: "application/json",
+                            success: function(res) {
+                                console.log("接收到后端响应:", res);
+                                
+                                // 显示状态
+                                if (res.code == 200) {
+                                    showStatus("识别成功!", "success");
+                                } else {
+                                    showStatus(res.msg, "error");
+                                }
+                                
+                                // 显示结果详情
+                                showResult(res);
+                            },
+                            error: function(err) {
+                                console.error("请求失败:", err);
+                                showStatus("请求失败: " + (err.responseJSON ? err.responseJSON.msg : err.statusText), "error");
+                            }
+                        });
+                    } catch (e) {
+                        console.error("处理出错:", e);
+                        showStatus("处理出错: " + e.message, "error");
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html> 
